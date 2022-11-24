@@ -12,68 +12,87 @@ int main(int argc, char* argv[])
     int y;
     int i;
     double sum=0.0;
+    double local_sum=0.0;
+    double* matrix_A;
 
     void Read_matrix(char* prompt, double local_A[], int n, int m_bar, int p, int my_rank);
-
+    double Serial_sum(double x[], int n, int m);
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
     if(my_rank==0)
     {
-        printf("Enter the values of m and n\n:");
-        scanf("%d, %d",&m,&n);
+        printf("Enter the values of n, m, x and y:\n");
+        scanf("%d",&n);
+        scanf("%d",&m);
+        scanf("%d",&x);
+        scanf("%d",&y);
+        printf("%d %d\n",x,y);
     }
     MPI_Bcast(&n, 1, MPI_INT,0,MPI_COMM_WORLD);
     MPI_Bcast(&m, 1, MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&x, 1, MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&y, 1, MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
 
     matrix_A = malloc(n*m*sizeof(double));
     Read_matrix("The Matrix A", matrix_A, n, m,p,my_rank);
-    MPI_Barrier(MPI_COMM_WORLD);
 
+    if (my_rank>=x && my_rank<=y)
+    {
+        local_sum=Serial_sum(matrix_A,n, m);
+    }
+    MPI_Reduce(&local_sum,&sum,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
     if (my_rank==0)
     {
-        printf("Please provide the input x and y\n:");
-        scanf("%d, %d",&x,&y);
-        for (i=x;i<=y;i++)
-        {
-            MPI_Reduce(&matrix_A,&sum,1,MPI_DOUBLE,MPI_SUM,0,i);
-        }
-        printf("%f",sum);
+        printf("The sum is: %f\n",sum);
     }
+    free(matrix_A);
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
 }
 
-void Read_matrix(char* prompt, double local_A[], int m, int local_n, int p, int my_rank)
+void Read_matrix(char* prompt, double local_A[], int n, int m, int p, int my_rank)
 {
     int i,j,q;
     double* temp;
     MPI_Status status;
-    temp = malloc(m*local_n*sizeof(double));
+    temp = malloc(m*n*sizeof(double));
 
     if(my_rank==0)
     {
-        for(i=0;i<m_bar;i++)
+        for(i=0;i<n;i++)
         {
-            for(j=0;j<n;j++)
+            for(j=0;j<m;j++)
             {
-                scanf("%f",&local_A[i*n+j]);
+                scanf("%f",&local_A[i*m+j]);
             }
         }
         for(q =1;q<p;q++)
         {
-            for(i =0;i<m_bar;i++)
+            for(i =0;i<n;i++)
             {
-                for(j=0;j<n;j++)
+                for(j=0;j<m;j++)
                 {
-                    scanf("%f",&temp[i*n+j]);
+                    scanf("%f",&temp[i*m+j]);
                 }
             }
-            MPI_Send(temp,m_bar*n,MPI_FLOAT,q,0,MPI_COMM_WORLD);
+            MPI_Send(temp,m*n,MPI_FLOAT,q,0,MPI_COMM_WORLD);
         }
     }
 	else
 	{
-        MPI_Recv(local_A,m_bar*n,MPI_FLOAT,0,0,MPI_COMM_WORLD,&status);
+        MPI_Recv(local_A,m*n,MPI_FLOAT,0,0,MPI_COMM_WORLD,&status);
 	}
 	free(temp);
+}
+double Serial_sum(double x[], int n, int m)
+{
+    int i;
+    double sum = 0.0;
+
+    for (i = 0; i < n*m; i++)
+        sum = sum + x[i];
+    return sum;
 }
