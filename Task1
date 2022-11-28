@@ -1,8 +1,12 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include"mpi.h"
+#include <stdlib.h>
+#include <thread>
+#include <future>
+#include <mpi.h>
+#include <cstring>
+#include <cstdio>
+#include <iostream>
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     int p;
     int my_rank;
@@ -17,10 +21,10 @@ int main(int argc, char* argv[])
 
     void Read_matrix(char* prompt, double local_A[], int n, int m_bar, int p, int my_rank);
     double Serial_sum(double x[], int n, int m);
+
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-
     if(my_rank==0)
     {
         printf("Enter the values of n, m, x and y:\n");
@@ -52,7 +56,6 @@ int main(int argc, char* argv[])
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 }
-
 void Read_matrix(char* prompt, double local_A[], int n, int m, int p, int my_rank)
 {
     int i,j,q;
