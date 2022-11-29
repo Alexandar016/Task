@@ -1,10 +1,18 @@
-#include <stdlib.h>
-#include <thread>
-#include <future>
-#include <mpi.h>
+/* By: Aleksandar Mitic */
+/* I am a ware that there are maybe to many libraries open, but I am not sure which are needed for asynch */
+
+#include <chrono>
 #include <cstring>
 #include <cstdio>
+#include <future>
 #include <iostream>
+#include <mpi.h>
+#include <string>
+#include <sstream>
+#include <stdlib.h>
+#include <thread>
+
+using namespace std;
 
 int main(int argc, char *argv[])
 {
@@ -21,37 +29,25 @@ int main(int argc, char *argv[])
 
     void Read_matrix(char* prompt, double local_A[], int n, int m_bar, int p, int my_rank);
     double Serial_sum(double x[], int n, int m);
+    void asyncFunc(double local_A[],int my_rank,int n, int m);
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     if(my_rank==0)
     {
-        printf("Enter the values of n, m, x and y:\n");
         scanf("%d",&n);
         scanf("%d",&m);
-        scanf("%d",&x);
-        scanf("%d",&y);
-        printf("%d %d\n",x,y);
     }
     MPI_Bcast(&n, 1, MPI_INT,0,MPI_COMM_WORLD);
     MPI_Bcast(&m, 1, MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast(&x, 1, MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast(&y, 1, MPI_INT,0,MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
 
     matrix_A = malloc(n*m*sizeof(double));
     Read_matrix("The Matrix A", matrix_A, n, m,p,my_rank);
 
-    if (my_rank>=x && my_rank<=y)
-    {
-        local_sum=Serial_sum(matrix_A,n, m);
-    }
-    MPI_Reduce(&local_sum,&sum,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-    if (my_rank==0)
-    {
-        printf("The sum is: %f\n",sum);
-    }
+    future<void> fn = async(launch::async,asyncFunc(matrix_A,my_rank,n,m));
+
     free(matrix_A);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
@@ -81,12 +77,12 @@ void Read_matrix(char* prompt, double local_A[], int n, int m, int p, int my_ran
                     scanf("%f",&temp[i*m+j]);
                 }
             }
-            MPI_Send(temp,m*n,MPI_FLOAT,q,0,MPI_COMM_WORLD);
+            MPI_Send(temp,m*n,MPI_DOUBLE,q,0,MPI_COMM_WORLD);
         }
     }
 	else
 	{
-        MPI_Recv(local_A,m*n,MPI_FLOAT,0,0,MPI_COMM_WORLD,&status);
+        MPI_Recv(local_A,m*n,MPI_DOUBLE,0,0,MPI_COMM_WORLD,&status);
 	}
 	free(temp);
 }
@@ -98,4 +94,43 @@ double Serial_sum(double x[], int n, int m)
     for (i = 0; i < n*m; i++)
         sum = sum + x[i];
     return sum;
+}
+void asyncFunc(double local_A[],int my_rank,int n, int m)
+{
+    int x;
+    int y;
+    int i;
+    double* sum=0;
+    double* local_sum=0;
+    char[80]* usr_input;
+    stringstream ss;	/* variable for detecting the integers in cin<< */
+    if (my_rank==0)
+    {
+        scanf(*usr_input,"Your command: ");
+        if (usr_input=="quit")
+        {
+            break;
+        }
+        else
+        {
+	/* Here missing some lines for sending variables to corresponding processes. */ 
+	/* Also I would need to create and add here a separate function for finding the integers x and y in user input from command line. */
+            for (i=x;i<=y;i++)
+            {
+                MPI_Recv(local_sum,1,MPI_DOUBLE,i,0,MPI_COMM_WORLD,&status);
+                sum=sum+local_sum;
+            }
+        }
+    /* Here missing some lines for receiving variables from process 0 */ 
+    else if (my_rank>=x && my_rank<=y)
+    {
+        local_sum=Serial_sum(matrix_A,n, m);
+        MPI_Send(local_sum,1,MPI_DOUBLE,my_rank,0,MPI_COMM_WORLD);
+    }
+    /*MPI_Reduce(&local_sum,&sum,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD); */
+
+    if (my_rank==0)
+    {
+        printf("The sum is: %f\n",sum);
+    }
 }
