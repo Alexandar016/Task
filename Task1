@@ -18,11 +18,14 @@ int main(int argc, char *argv[])
 {
     int p;
     int my_rank;
+    int rank_low;
+    int rank_upp;
     int n;
     int m;
     int x;
     int y;
     int i;
+    string usr_input;
     double sum=0.0;
     double local_sum=0.0;
     double* matrix_A;
@@ -45,8 +48,49 @@ int main(int argc, char *argv[])
 
     matrix_A = malloc(n*m*sizeof(double));
     Read_matrix("The Matrix A", matrix_A, n, m,p,my_rank);
+    while(true)
+    {
+        if (my_rank==0)
+        {
+            cin<<usr_input;
+            if (usr_input="quit")
+            {
+                break;
+            }
+            else
+            {
+                cout<<"Give x and y"<<endl;
+                cin>>x>>y;
+                rank_low=x/p;
+                rank_up=y/p;
+                for(i=1;i<p;i++)
+                {
+                    MPI_Send(x,1,MPI_INT,i,0,MPI_COMM_WORLD);
+                    MPI_Send(y,1,MPI_INT,i,0,MPI_COMM_WORLD);
+                }
+                // Somehow we find x and y from the input
+                // I have no clue how to make this determination of the integers in user input from the command line in C++
+                //future<void> fn = async(launch::async,asyncFunc(matrix_A,my_rank,n,m));
+            }
+        }
+        else
+        {
+            MPI_Recv(x,1,MPI_INT,0,0,MPI_COMM_WORLD,&status);
+            MPI_Recv(y,1,MPI_INT,0,0,MPI_COMM_WORLD,&status);
+        }
+        if (my_rank==0)
+        {
+            for (i=rank_low;i<=rank_up;i++)
+            {
+                MPI_Recv(local_sum,1,MPI_DOUBLE,i,0,MPI_COMM_WORLD,&status);
+                sum=sum+local_sum;
+            }
+        }
+        else
+        {
 
-    future<void> fn = async(launch::async,asyncFunc(matrix_A,my_rank,n,m));
+        }
+    }
 
     free(matrix_A);
     MPI_Barrier(MPI_COMM_WORLD);
@@ -97,40 +141,5 @@ double Serial_sum(double x[], int n, int m)
 }
 void asyncFunc(double local_A[],int my_rank,int n, int m)
 {
-    int x;
-    int y;
-    int i;
-    double* sum=0;
-    double* local_sum=0;
-    char[80]* usr_input;
-    stringstream ss;	/* variable for detecting the integers in cin<< */
-    if (my_rank==0)
-    {
-        scanf(*usr_input,"Your command: ");
-        if (usr_input=="quit")
-        {
-            break;
-        }
-        else
-        {
-	/* Here missing some lines for sending variables to corresponding processes. */ 
-	/* Also I would need to create and add here a separate function for finding the integers x and y in user input from command line. */
-            for (i=x;i<=y;i++)
-            {
-                MPI_Recv(local_sum,1,MPI_DOUBLE,i,0,MPI_COMM_WORLD,&status);
-                sum=sum+local_sum;
-            }
-        }
-    /* Here missing some lines for receiving variables from process 0 */ 
-    else if (my_rank>=x && my_rank<=y)
-    {
-        local_sum=Serial_sum(matrix_A,n, m);
-        MPI_Send(local_sum,1,MPI_DOUBLE,my_rank,0,MPI_COMM_WORLD);
-    }
-    /*MPI_Reduce(&local_sum,&sum,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD); */
 
-    if (my_rank==0)
-    {
-        printf("The sum is: %f\n",sum);
-    }
 }
