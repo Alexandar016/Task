@@ -1,6 +1,4 @@
 /* By: Aleksandar Mitic */
-/* I am a ware that there are maybe to many libraries open, but I am 
-not sure which are needed for asynch */
 
 #include <chrono>
 #include <cstring>
@@ -72,8 +70,6 @@ int main(int argc, char *argv[])
                     MPI_Send(x,1,MPI_INT,i,0,MPI_COMM_WORLD);
                     MPI_Send(y,1,MPI_INT,i,0,MPI_COMM_WORLD);
                 }
-                // Curently I can not make this determination of the integers in user input from the command line in C++
-                //future<void> fn = async(launch::async,asyncFunc(matrix_A,my_rank,n,m));
             }
         }
         else
@@ -84,19 +80,16 @@ int main(int argc, char *argv[])
 
         if (my_rank!=0)
         {
-            for (i=1; i<p; i++)
+            sum=0;
+            for (j=x;j<=y;j++)
             {
-                sum=0;
-                for (j=x;j<=y;j++)
+                if(j-n*my_rank>=0)
                 {
-                    if(j-n*i>=0)
-                    {
-                        row=j%n;
-                        sum=sum+Serial_sum(local_A,row,m);
-                    }
+                    row=j%n;
+                    sum=sum+Serial_sum(local_A,row,m);
                 }
-                MPI_Send(sum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
             }
+            MPI_Send(sum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
         }
         else
         {
@@ -162,8 +155,4 @@ double Serial_sum(double x[], int n, int m)
     for (i = n*m; i < (n+1)*m; i++)
         sum = sum + x[i];
     return sum;
-}
-void asyncFunc(double local_A[],int my_rank,int n, int m)
-{
-
 }
