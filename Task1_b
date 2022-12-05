@@ -1,6 +1,4 @@
 /* By: Aleksandar Mitic */
-/* I am a ware that there are maybe to many libraries open, but I am */
-/* not sure which are needed for asynch */
 #include <chrono>
 #include <cstring>
 #include <cstdio>
