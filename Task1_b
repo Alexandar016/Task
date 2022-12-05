@@ -1,0 +1,181 @@
+/* By: Aleksandar Mitic */
+/* I am a ware that there are maybe to many libraries open, but I am */
+/* not sure which are needed for asynch */
+#include <chrono>
+#include <cstring>
+#include <cstdio>
+#include <future>
+#include <iostream>
+#include <mpi.h>
+#include <string>
+#include <sstream>
+#include <stdlib.h>
+#include <thread>
+
+using namespace std;
+
+int main(int argc, char *argv[])
+{
+    int p;
+    int my_rank;
+    /* int rank_low; */
+    /* int rank_up;  */
+    int n;
+    int m;
+    int x;
+    int y;
+    int i;
+    int j;
+    int q;
+    string usr_input;
+    double sum=0.0;
+    double local_sum=0.0;
+    double final_sum=0.0;
+    double* matrix_A;
+
+    void Read_matrix(char* prompt, double local_A[], int n, int m, int p, int my_rank);
+    double Serial_sum(double x[], int n, int m);
+    double Get_Sum(double local_A[],int x,int y, int n, int m, int my_rank);
+    double Get_Sum_0(double local_A[],int x,int y, int n, int m);
+
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &p);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    if(my_rank==0)
+    {
+        scanf("%d",&n);
+        scanf("%d",&m);
+    }
+    MPI_Bcast(&n, 1, MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&m, 1, MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    matrix_A = malloc(n*m*sizeof(double));
+    Read_matrix("The Matrix A", matrix_A, n, m,p,my_rank);
+    while(true)
+    {
+        if (my_rank==0)
+        {
+            cin<<usr_input;
+            if (usr_input="quit")
+            {
+                break;
+            }
+            else
+            {
+                cout<<"Give x and y"<<endl;
+                cin>>x>>y;
+                /* sum [x,y]        */
+                /* rank_low=x/p;    */
+                /* rank_up=y/p;     */
+                for(i=1;i<p;i++)
+                {
+                    MPI_Send(x,1,MPI_INT,i,0,MPI_COMM_WORLD);
+                    MPI_Send(y,1,MPI_INT,i,0,MPI_COMM_WORLD);
+                }
+            }
+        }
+        else
+        {
+            MPI_Recv(x,1,MPI_INT,0,0,MPI_COMM_WORLD,&status);
+            MPI_Recv(y,1,MPI_INT,0,0,MPI_COMM_WORLD,&status);
+        }
+
+        if (my_rank!=0)
+        {
+            std::future<std::double> result = std::async(std::launch::async, Get_Sum,local_A,x,y,n,m,my_rank)
+            sum = result.get();//blocking until method is finished
+
+            MPI_Send(sum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+        }
+        else
+        {
+            std::future<std::double> result1 = std::async(std::launch::async, Get_Sum_0,local_A,x,y,n,m)
+            final_sum=result1.get();
+
+            for(q=1;q<p;q++)
+            {
+                //while(true){
+                //    MPI_IRecv
+                //    sleep(200)
+                // }
+                MPI_Recv(sum, 1, MPI_DOUBLE, q, 0, MPI_COMM_WORLD, &status);
+                final_sum=final_sum+sum;
+            }
+            cin<<"Sum is: "<<final_sum<<endl;
+        }
+    }
+    free(matrix_A);
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
+}
+
+double Get_Sum(double local_A[],int x,int y, int n, int m, int my_rank){
+    double sum=0;
+    for (j=x;j<=y;j++)
+    {
+        if(j-n*my_rank>=0)
+        {
+            row=j%n;
+            sum=sum+Serial_sum(local_A,row,m);
+        }
+    }
+    return sum;
+}
+
+double Get_Sum_0(double local_A[],int x,int y, int n, int m){
+    double sum=0;
+    for(i=x;i<=y;i++)
+    {
+        if (n-i-1>=0)
+        {
+            sum=sum+Serial_sum(local_A, i, m);
+        }
+    }
+    return sum;
+}
+
+void Read_matrix(char* prompt, double local_A[], int n, int m, int p, int my_rank)
+{
+    int i,j,q;
+    double* temp;
+    MPI_Status status;
+    temp = malloc(m*n*sizeof(double));
+
+    if(my_rank==0)
+    {
+        for(i=0;i<n;i++)
+        {
+            for(j=0;j<m;j++)
+            {
+                scanf("%f",&local_A[i*m+j]);
+            }
+        }
+        for(q =1;q<p;q++)
+        {
+            for(i =0;i<n;i++)
+            {
+                for(j=0;j<m;j++)
+                {
+                    scanf("%f",&temp[i*m+j]);
+                }
+            }
+            MPI_Send(temp,m*n,MPI_DOUBLE,q,0,MPI_COMM_WORLD);
+        }
+    }
+    else
+    {
+        MPI_Recv(local_A,m*n,MPI_DOUBLE,0,0,MPI_COMM_WORLD,&status);
+    }
+    free(temp);
+}
+double Serial_sum(double x[], int n, int m)
+{
+    int i;
+    double sum = 0.0;
+
+    for (i = n*m; i < (n+1)*m; i++)
+        sum = sum + x[i];
+    return sum;
+}
