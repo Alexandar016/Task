@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     {
         if (my_rank==0)
         {
-            getline (cin, usr_inp);
+            getline (cin, usr_input);
             if (usr_input="quit")
             {
                 break;
@@ -63,8 +63,8 @@ int main(int argc, char *argv[])
             else
             {
                 /* using regular expression to take integers from interval */
-                sscanf( usr_inp.c_str(), "%*[^\[]\[%d",&x );
-                sscanf( usr_inp.c_str(), "%*[^,],%d",&y );
+                sscanf( usr_input.c_str(), "%*[^\[]\[%d",&x );
+                sscanf( usr_input.c_str(), "%*[^,],%d",&y );
                 
                 /* rank_low=x/p; */
                 /* rank_up=y/p; */
