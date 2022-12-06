@@ -9,6 +9,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <thread>
+#include <regex>
 
 using namespace std;
 
@@ -55,15 +56,17 @@ int main(int argc, char *argv[])
     {
         if (my_rank==0)
         {
-            cin<<usr_input;
+            getline (cin, usr_input);
             if (usr_input="quit")
             {
                 break;
             }
             else
             {
-                cout<<"Give x and y"<<endl;
-                cin>>x>>y;
+                /* using regular expression to take integers from interval */
+                sscanf( usr_input.c_str(), "%*[^\[]\[%d",&x );
+                sscanf( usr_input.c_str(), "%*[^,],%d",&y );
+                
                 /* sum [x,y]        */
                 /* rank_low=x/p;    */
                 /* rank_up=y/p;     */
