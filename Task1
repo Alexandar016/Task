@@ -36,7 +36,6 @@ int main(int argc, char *argv[])
 
     void Read_matrix(char* prompt, double local_A[], int n, int m, int p, int my_rank);
     double Serial_sum(double x[], int n, int m);
-    void asyncFunc(double local_A[],int my_rank,int n, int m);
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
