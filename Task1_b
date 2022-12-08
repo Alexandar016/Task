@@ -26,6 +26,7 @@ int main(int argc, char *argv[])
     int i;
     int j;
     int q;
+    int row;
     string usr_input;
     double sum=0.0;
     double local_sum=0.0;
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
         if (my_rank==0)
         {
             getline (cin, usr_input);
-            if (usr_input="quit")
+            if (usr_input=="quit")
             {
                 break;
             }
@@ -85,14 +86,14 @@ int main(int argc, char *argv[])
 
         if (my_rank!=0)
         {
-            std::future<std::double> result = std::async(std::launch::async, Get_Sum,local_A,x,y,n,m,my_rank)
+            std::future<std::double> result = std::async(std::launch::async, Get_Sum,matrix_A,x,y,n,m,my_rank)
             sum = result.get();//blocking until method is finished
 
             MPI_Send(sum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
         }
         else
         {
-            std::future<std::double> result1 = std::async(std::launch::async, Get_Sum_0,local_A,x,y,n,m)
+            std::future<std::double> result1 = std::async(std::launch::async, Get_Sum_0,matrix_A,x,y,n,m)
             final_sum=result1.get();
 
             for(q=1;q<p;q++)
@@ -104,7 +105,7 @@ int main(int argc, char *argv[])
                 MPI_Recv(sum, 1, MPI_DOUBLE, q, 0, MPI_COMM_WORLD, &status);
                 final_sum=final_sum+sum;
             }
-            cin<<"Sum is: "<<final_sum<<endl;
+            cout<<"Sum is: "<<final_sum<<endl;
         }
     }
     free(matrix_A);
