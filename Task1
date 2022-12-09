@@ -69,8 +69,8 @@ int main(int argc, char *argv[])
                 sscanf( usr_input.c_str(), "%*[^\[]\[%d",&x );
                 sscanf( usr_input.c_str(), "%*[^,],%d",&y );
                 
-                /* rank_low=x/p; */
-                /* rank_up=y/p; */
+                /* rank_low=x/n; */
+                /* rank_up=y/n;  */
                 for(i=1;i<p;i++)
                 {
                     MPI_ISend(&x,1,MPI_INT,i,0,MPI_COMM_WORLD,&request);
@@ -86,6 +86,7 @@ int main(int argc, char *argv[])
         MPI_Wait(&request, &status);
         //MPI_Wait(&request2, &status);
         
+        /* if (rank_low<=my_rank<=rank_up) */
         if (my_rank!=0)
         {
             sum=0.0;
