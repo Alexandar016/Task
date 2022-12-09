@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
             getline (cin, usr_input);
             if (usr_input=="quit")
             {
+                MPI_Abort(MPI_COMM_WORLD, 1);
                 break;
             }
             else
