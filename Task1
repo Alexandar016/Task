@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
     double final_sum=0.0;
     double* matrix_A;
     MPI_Status status;
+    //MPI_Request request, request2;
     MPI_Request request = MPI_REQUEST_NULL;
 
     void Read_matrix(char* prompt, double local_A[], int n, int m, int p, int my_rank);
@@ -83,6 +84,7 @@ int main(int argc, char *argv[])
             MPI_IRecv(&y,1,MPI_INT,0,1,MPI_COMM_WORLD,&request);
         }
         MPI_Wait(&request, &status);
+        //MPI_Wait(&request2, &status);
         
         if (my_rank!=0)
         {
