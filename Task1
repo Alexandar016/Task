@@ -53,15 +53,15 @@ int main(int argc, char *argv[])
 
     matrix_A = malloc(n*m*sizeof(double));
     Read_matrix("The Matrix A", matrix_A, n, m,p,my_rank);
-    while(true)
-    {
+    //while(true)
+    //{
         if (my_rank==0)
         {
             getline (cin, usr_input);
             if (usr_input=="quit")
             {
                 MPI_Abort(MPI_COMM_WORLD, 1);
-                break;
+                //break;
             }
             else
             {
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
             }
             cout<<"Sum is: "<<final_sum<<endl;
         }
-    }
+    //}
     MPI_Wait(&request, &status);
     free(matrix_A);
     MPI_Barrier(MPI_COMM_WORLD);
