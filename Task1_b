@@ -32,6 +32,7 @@ int main(int argc, char *argv[])
     double local_sum=0.0;
     double final_sum=0.0;
     double* matrix_A;
+    MPI_Status status;
 
     void Read_matrix(char* prompt, double local_A[], int n, int m, int p, int my_rank);
     double Serial_sum(double x[], int n, int m);
