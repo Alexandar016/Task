@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
     double final_sum=0.0;
     double* matrix_A;
     MPI_Status status;
+    MPI_Request request = MPI_REQUEST_NULL;
 
     void Read_matrix(char* prompt, double local_A[], int n, int m, int p, int my_rank);
     double Serial_sum(double x[], int n, int m);
@@ -71,17 +72,18 @@ int main(int argc, char *argv[])
                 /* rank_up=y/p; */
                 for(i=1;i<p;i++)
                 {
-                    MPI_Send(x,1,MPI_INT,i,0,MPI_COMM_WORLD);
-                    MPI_Send(y,1,MPI_INT,i,0,MPI_COMM_WORLD);
+                    MPI_ISend(&x,1,MPI_INT,i,0,MPI_COMM_WORLD,&request);
+                    MPI_ISend(&y,1,MPI_INT,i,1,MPI_COMM_WORLD,&request);
                 }
             }
         }
         else
         {
-            MPI_Recv(x,1,MPI_INT,0,0,MPI_COMM_WORLD,&status);
-            MPI_Recv(y,1,MPI_INT,0,0,MPI_COMM_WORLD,&status);
+            MPI_IRecv(&x,1,MPI_INT,0,0,MPI_COMM_WORLD,&request);
+            MPI_IRecv(&y,1,MPI_INT,0,1,MPI_COMM_WORLD,&request);
         }
-
+        MPI_Wait(&request, &status);
+        
         if (my_rank!=0)
         {
             sum=0.0;
@@ -93,7 +95,7 @@ int main(int argc, char *argv[])
                     sum=sum+Serial_sum(matrix_A,row,m);
                 }
             }
-            MPI_Send(sum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+            MPI_ISend(&sum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD,&request);
         }
         else
         {
@@ -107,12 +109,13 @@ int main(int argc, char *argv[])
             }
             for(q=1;q<p;q++)
             {
-                MPI_Recv(sum, 1, MPI_DOUBLE, q, 0, MPI_COMM_WORLD, &status);
+                MPI_IRecv(sum, 1, MPI_DOUBLE, q, 0, MPI_COMM_WORLD, &request);
                 final_sum=final_sum+sum;
             }
             cout<<"Sum is: "<<final_sum<<endl;
         }
     }
+    MPI_Wait(&request, &status);
     free(matrix_A);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
